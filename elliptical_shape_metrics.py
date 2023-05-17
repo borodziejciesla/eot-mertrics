@@ -72,7 +72,7 @@ def gw_distance(reference_ellipse, estimated_ellipse):
     matrix_reference_sqrtm = sqrtm(reference_matrix)
     matrix_sum = reference_matrix + estimated_matrix
 
-    distance_sqr = diff_norm + np.trace(matrix_sum - 2.0 * sqrtm(matrix_reference_sqrtm * estimated_matrix * estimated_matrix))
+    distance_sqr = diff_norm + np.trace(matrix_sum - 2.0 * sqrtm(matrix_reference_sqrtm * estimated_matrix * matrix_reference_sqrtm))
     return np.sqrt(distance_sqr)
 
 def calculate_matrix_representation(ellipse):
