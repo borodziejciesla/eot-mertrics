@@ -15,3 +15,6 @@ Metrics assumes Ellipse objects:
 
 ### Mterics for rotated ellipse
 ![alt text](figures/ellipse_rotated.png)
+
+### Mterics for different $l_1$
+![alt text](figures/ellipse_l1.png)
