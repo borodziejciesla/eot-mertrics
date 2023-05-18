@@ -12,3 +12,6 @@ Metrics assumes Ellipse objects:
 * `kl_distance(reference_ellipse, estimated_ellipse)` - Kullback-Leibler Divergence
 * `hellinger_distance(reference_ellipse, estimated_ellipse)` - Hellinger Distance
 * `gw_distance(reference_ellipse, estimated_ellipse)` - Gaussian Wasserstein Distance
+
+### Mterics for rotated ellipse
+![alt text](figures/ellipse_rotated.png)

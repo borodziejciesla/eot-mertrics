@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from scipy.linalg import sqrtm
 
 def lp_metric(reference_ellipse, estimated_ellipse, p=2):
@@ -6,7 +7,7 @@ def lp_metric(reference_ellipse, estimated_ellipse, p=2):
     raw_diff = reference_ellipse - estimated_ellipse
     diff_pow = np.power(raw_diff, p)
     diff_pow_sum = sum(diff_pow)
-    distance = np.sqrt(diff_pow_sum, 1.0 / p)
+    distance = np.power(diff_pow_sum, 1.0 / p)
     return distance
 
 def decoupled_measures(reference_ellipse, estimated_ellipse):
@@ -16,7 +17,7 @@ def decoupled_measures(reference_ellipse, estimated_ellipse):
 
     diff = reference_matrix - estimated_matrix
     distance = np.sqrt(np.trace(diff * diff.T))
-    return distance
+    return distance[0]
 
 def kl_distance(reference_ellipse, estimated_ellipse):
     # ellipse -> [x, y, orientation, l1, l2]'
@@ -37,9 +38,9 @@ def kl_distance_single(ellipse_1, ellipse_2):
     matrix_1_det = np.linalg.det(matrix_1)
     matrix_2_det = np.linalg.det(matrix_2)
 
-    distance = 0.5 * (np.trace(matrix_2_inv*matrix_1) + diff.T*matrix_2_inv*diff
+    distance = 0.5 * (np.trace(matrix_2_inv*matrix_1) + diff.T @ matrix_2_inv @ diff
         - 2.0 + np.log(matrix_2_det / matrix_1_det))
-    return distance
+    return distance[0]
 
 def hellinger_distance(reference_ellipse, estimated_ellipse):
     # ellipse -> [x, y, orientation, l1, l2]'
@@ -56,8 +57,11 @@ def hellinger_distance(reference_ellipse, estimated_ellipse):
     matrix_sum_det = np.linalg.det(matrix_sum / 2.0)
     matrix_sum_inv = np.linalg.inv(matrix_sum / 2.0)
 
-    distance_sqr = 1.0 - (np.power(matrix_reference_det, 0.25) * np.power(matrix_estimated_det, 0.25) / np.power(matrix_sum_det, 0.5)) * np.exp(-diff.T * matrix_sum_inv * diff / 8.0)
-    return np.sqrt(distance_sqr)
+    c = min(np.power(matrix_reference_det, 0.25) * np.power(matrix_estimated_det, 0.25) / np.power(matrix_sum_det, 0.5), 1.0)
+    e = np.exp(-diff.T @ matrix_sum_inv @  diff / 8.0)
+
+    distance_sqr = 1.0 - c * e
+    return math.sqrt(distance_sqr[0])
 
 def gw_distance(reference_ellipse, estimated_ellipse):
     # ellipse -> [x, y, orientation, l1, l2]'
@@ -72,7 +76,7 @@ def gw_distance(reference_ellipse, estimated_ellipse):
     matrix_reference_sqrtm = sqrtm(reference_matrix)
     matrix_sum = reference_matrix + estimated_matrix
 
-    distance_sqr = diff_norm + np.trace(matrix_sum - 2.0 * sqrtm(matrix_reference_sqrtm * estimated_matrix * matrix_reference_sqrtm))
+    distance_sqr = diff_norm + np.trace(matrix_sum - 2.0 * sqrtm(matrix_reference_sqrtm @ estimated_matrix @ matrix_reference_sqrtm))
     return np.sqrt(distance_sqr)
 
 def calculate_matrix_representation(ellipse):
@@ -87,7 +91,7 @@ def calculate_matrix_representation(ellipse):
     R = np.array([[c, -s], [s, c]])
     l = np.array([[l1**2, 0.0], [0.0, l2**2]])
 
-    return R * l * R.T
+    return R @ l @ R.T
 
 def create_center(ellipse):
-    return ellipse[0:1]
+    return np.array([[ellipse[0]], [ellipse[1]]])
