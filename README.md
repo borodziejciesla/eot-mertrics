@@ -18,3 +18,6 @@ Metrics assumes Ellipse objects:
 
 ### Mterics for different $l_1$
 ![alt text](figures/ellipse_l1.png)
+
+### Mterics for translated center
+![alt text](figures/ellipse_center.png)
