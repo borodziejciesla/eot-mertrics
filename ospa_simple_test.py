@@ -11,7 +11,7 @@ reference[2, :] = np.array([15.0, 5.0, 0.5, 0.25, 0.5])
 # Set Estimations
 estimations = np.zeros((4, 5))
 
-estimations[0, :] = np.array([5.0, 5.0, 0.0, 1.0, 1.0])
+estimations[0, :] = np.array([111.0, 5.0, 0.0, 1.0, 1.0])
 estimations[1, :] = np.array([6.0, 6.0, 0.0, 1.0, 0.5])
 estimations[2, :] = np.array([12.0, 5.0, 0.5, 0.25, 0.5])
 estimations[3, :] = np.array([12.0, 5.0, 0.5, 0.25, 0.5])
