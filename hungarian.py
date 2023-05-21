@@ -17,12 +17,13 @@ def hungarian(perf):
     y_con = np.nonzero(num_y!=0)
     
     # Assemble Condensed Performance Matrix
-    P_size = max(x_con.shape[1], y_con.shape[1])
+    P_size = max(x_con[0].shape[0], y_con[0].shape[0])
     P_cond = np.zeros((P_size, P_size))
-    P_cond[1:x_con.shape[1], 1:y_con.shape[1]] = perf[x_con, y_con]
+    # P_cond[0:x_con[0].shape[0]-1, 0:y_con[0].shape[0]-1] = perf[x_con[0], y_con[0]]
+    P_cond[:, :] = perf[:, :]
     if P_cond.size == 0:
-      Cost = 0
-      return
+      cost = 0
+      return matching, cost
 
     # Ensure that a perfect matching exists
     # Calculate a form of the Edge Matrix
@@ -33,10 +34,11 @@ def hungarian(perf):
 
     # Project additional vertices and edges so that a perfect matching
     # exists
-    Pmax = max(max(P_cond[~np.isinf(P_cond)]))
+    Pmax = max(P_cond[~np.isinf(P_cond)])
     P_size = P_cond.shape[1] + cnum
-    P_cond = np.ones((P_size, P_size)) * Pmax
-    P_cond[1:x_con.shape[1], 1:y_con.shape[1]] = perf[x_con, y_con]
+    P_cond = np.ones((int(P_size[0]), int(P_size[0]))) * Pmax
+    #P_cond[1:x_con.shape[1], 1:y_con.shape[1]] = perf[x_con, y_con]
+    P_cond = perf
    
     #*************************************************
     # MAIN PROGRAM: CONTROLS WHICH STEP IS EXECUTED
@@ -61,8 +63,10 @@ def hungarian(perf):
 
     # Remove all the virtual satellites and targets and uncondense the
     # Matching to the size of the original performance matrix.
-    matching[x_con, y_con] = M[1:x_con.shape[1], 1:y_con.shape[1]]
-    Cost = sum(sum(perf(matching == 1)))
+    #matching[x_con, y_con] = M[1:x_con.shape[1], 1:y_con.shape[1]]
+    matching = M
+    cost = np.sum(np.ma.masked_where(matching == 0, perf))
+    return matching, cost
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #   STEP 1: Find the smallest number of zeros in each row
@@ -70,10 +74,10 @@ def hungarian(perf):
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 def step1(P_cond):
-    P_size = P_cond.shape(1)
+    P_size = P_cond.shape[1]
     
     # Loop throught each row
-    for ii in range(1, P_size):
+    for ii in range(0, P_size):
         rmin = min(P_cond[ii, :])
         P_cond[ii,:] = P_cond[ii, :] - rmin
 
@@ -88,13 +92,13 @@ def step1(P_cond):
 
 def step2(P_cond):
     # Define variables
-    P_size = P_cond.shape(1)
+    P_size = P_cond.shape[1]
     r_cov = np.zeros((P_size, 1))   # A vector that shows if a row is covered
     c_cov = np.zeros((P_size, 1))   # A vector that shows if a column is covered
     M = np.zeros((P_size, P_size))  # A mask that shows if a position is starred or primed
     
-    for ii in range(1, P_size):
-        for jj in range(1, P_size):
+    for ii in range(0, P_size):
+        for jj in range(0, P_size):
             if P_cond[ii,jj] == 0 and r_cov[ii] == 0 and c_cov[jj] == 0:
                 M[ii,jj] = 1
                 r_cov[ii] = 1
@@ -113,13 +117,13 @@ def step2(P_cond):
 #**************************************************************************
 
 def step3(M, P_size):
-    c_cov = sum(M, 1)
+    c_cov = sum(M, 0)
     if sum(c_cov) == P_size:
         stepnum = 7
     else:
         stepnum = 4
 
-    return stepnum
+    return c_cov, stepnum
   
 #**************************************************************************
 #   STEP 4: Find a noncovered zero and prime it.  If there is no starred
@@ -131,7 +135,7 @@ def step3(M, P_size):
 #**************************************************************************
 
 def step4(P_cond, r_cov, c_cov, M):
-    P_size = P_cond.shape(1)
+    P_size = P_cond.shape[1]
 
     zflag = 1
     while zflag:
@@ -139,8 +143,8 @@ def step4(P_cond, r_cov, c_cov, M):
         row = 0
         col = 0
         exit_flag = 1
-        ii = 1
-        jj = 1
+        ii = 0
+        jj = 0
 
         while exit_flag:
             if P_cond[ii,jj] == 0 and r_cov[ii] == 0 and c_cov[jj] == 0:
@@ -148,10 +152,10 @@ def step4(P_cond, r_cov, c_cov, M):
                 col = jj
                 exit_flag = 0
             jj = jj + 1 
-            if jj > P_size:
-                jj = 1
+            if jj > P_size-1:
+                jj = 0
                 ii = ii+1
-            if ii > P_size:
+            if ii > P_size-1:
                 exit_flag = 0
 
         # If there are no uncovered zeros go to step 6
@@ -240,7 +244,7 @@ def step5(M,Z_r,Z_c,r_cov,c_cov):
 def step6(P_cond, r_cov, c_cov):
     a = np.nonzero(r_cov == 0)
     b = np.nonzero(c_cov == 0)
-    minval = min(min(P_cond(a,b)))
+    minval = np.min(P_cond[a,b])
 
     P_cond[np.nonzero(r_cov == 1), :] = P_cond[np.nonzero(r_cov == 1), :] + minval
     P_cond[:, np.nonzero(c_cov == 0)] = P_cond[:, np.nonzero(c_cov == 0)] - minval
@@ -253,10 +257,10 @@ def min_line_cover(Edge):
     # Step 2
     r_cov, c_cov, M, stepnum = step2(Edge)
     # Step 3
-    c_cov, stepnum = step3(M, Edge.shape(1))
+    c_cov, stepnum = step3(M, Edge.shape[0])
     # Step 4
     M, r_cov, c_cov, Z_r, Z_c, stepnum = step4(Edge, r_cov, c_cov, M)
     # Calculate the deficiency
-    cnum = Edge.shape(1) - sum(r_cov) - sum(c_cov);
+    cnum = Edge.shape[1] - sum(r_cov) - sum(c_cov)
 
     return cnum
